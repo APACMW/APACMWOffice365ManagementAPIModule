@@ -21,7 +21,7 @@
     GUID                 = '676abe06-d60c-4f71-be09-e226a65c7a71'
 
     # Author of this module
-    Author               = 'Qi Dong; DongLi Pan'
+    Author               = 'Qi Dong<doqi@@microsoft.com>; DongLi Pan<dongli.pan@microsoft.com>'
 
     # Company or vendor of this module
     CompanyName          = 'MSFT'
@@ -30,7 +30,7 @@
     Copyright            = '(c) Qi Dong; DongLi Pan. All rights reserved.'
 
     # Description of the functionality provided by this module
-    # Description = 'IT Admin can use this PowerShell module to call Office365ManagementAPI. It suppports the operations of Office365ManagementAPI. Also supports Webhook and notifications.'
+    Description = 'IT Admin can use this PowerShell module to call Office365ManagementAPI. It suppports the operations of Office365ManagementAPI. Also supports Webhook and notifications.'
 
     # Minimum version of the PowerShell engine required by this module
     PowerShellVersion    = '5.1'
@@ -101,7 +101,7 @@
         PSData = @{
 
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags = @('Microsoft', 'Office365ManagementAPI', 'Audit data')
+            Tags = @('Microsoft', 'Office365ManagementAPI')
 
             # A URL to the license for this module.
             # LicenseUri = 'https://github.com/DongWangXiaoQi/APACMWOffice365ManagementAPIModule/blob/main/LICENSE'

@@ -6,11 +6,10 @@
   IT Admin can use this PowerShell module to call Office365ManagementAPI. It suppports all operations of Office365ManagementAPI. Also supports Webhook subscriptions and notifications.
 
  .Example
-   # Installl and import this PowerShell Module     
-   Set-location 'C:\Program Files\WindowsPowerShell\Modules';
-   MD ZIZHUOffice365ManagementAPI
-   Copy 2 files(ZIZHUOffice365ManagementAPI.psd1 and ZIZHUOffice365ManagementAPI.psm1) to this folder ZIZHUOffice365ManagementAPI
-   Import-Module ZIZHUOffice365ManagementAPI
+   # Installl and import this PowerShell Module
+   https://www.powershellgallery.com/packages/ZIZHUOffice365ManagementAPI/1.0
+   https://github.com/APACMW/APACMWOffice365ManagementAPIModule 
+   Install-Module -Name ZIZHUOffice365ManagementAPI
 
  .Example
    # Connect to ZIZHUOffice365ManagementAPI module via client secret
@@ -34,8 +33,8 @@ $loginHint = 'freeman@vjqg8.onmicrosoft.com';
 Connect-Office365ManagementAPI -tenantID $tenantId -clientID $clientID -loginHint $loginHint -redirectUri $redirectUri;
 
    # List available content and receive audit data
-$startTime = "2024-03-02T00:00:00"; 
-$endTime = "2024-03-03T00:00:00";
+$startTime = "2024-03-24T00:00:00"; 
+$endTime = "2024-03-25T00:00:00";
 $blobs = Get-AvailableContent -startTime $startTime -endTime $endTime;
 Receive-Content -blobs $blobs;
 
@@ -45,7 +44,7 @@ Stop-Subscription -contentType AuditSharePoint;
 Stop-Subscriptions;
 
    # Start thesubscriptions. If don't pass $webHookBody, no webhook for the subscription
-$webhookEndpoint='https://7104-2404-f801-9000-18-b055-6c1c-9de7-1729.ngrok-free.app/api/O365ManagementAPIHttpFunction';
+$webhookEndpoint='https://3b34-2404-f801-9000-18-b055-6c1c-9de7-1729.ngrok-free.app/api/O365ManagementAPIHttpFunction';
 $authId = 'ZIZHUOffice365ManagementAPINotification20240220';
 $expiration= "2024-04-14T00:00:00";
 $webHookBody=
@@ -65,8 +64,8 @@ Start-Subscription AuditGeneral $webHookBody;
 Start-Subscription DLPAll $webHookBody;
 
   # List the notifications
-$startTime = "2024-03-02T00:00:00"; 
-$endTime = "2024-03-03T00:00:00";
+$startTime = "2024-03-24T00:00:00"; 
+$endTime = "2024-03-25T00:00:00";
 Get-Notifications -startTime $startTime -endTime $endTime -contentType AuditExchange;
 
   # Receive the FriendlyNames for DLP Resource
@@ -77,13 +76,20 @@ Disconnect-Office365ManagementAPI;
 Get-Module ZIZHUOffice365ManagementAPI | Remove-Module;
 #>
 
+enum Office365SubscriptionPlanType {
+    Enterpriseplan    
+    GCCGovernmentPlan
+    GCCHighGovernmentPlan
+    DoDGovernmentPlan
+    GallatinPlan
+}
 enum ContentType {
     AuditAzureActiveDirectory    
     AuditExchange
     AuditSharePoint
     AuditGeneral
     DLPAll
-};
+}
 class Blob {
     [string]$contentUri
     [string]$contentId
@@ -119,14 +125,32 @@ class Notification {
 [string]$script:loginHint = $null;
 [X509Certificate]$script:clientcertificate = $null;
 $script:AuthResult = $null;
-[string]$script:Scope = 'https://manage.office.com/.default';
+[string]$script:root = $null;
+[string]$script:scope = $null; 
 $script:httpErrorResponse = $null;
-$script:maxretries = 10;
-$script:sleepSeconds = 1;
-function Show-HttpErrorResponse {
-    Write-Output $script:httpErrorResponse;
+$script:maxretries = 4;
+$script:sleepSeconds = 2;
+function Show-VerboseMessage {
+    param(
+        [Parameter(Mandatory = $true)][string]$message
+    )    
+    Write-Verbose "[$((Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss"))]: $message";
+    return;
 }
-
+function Show-InformationalMessage {
+    param(
+        [Parameter(Mandatory = $true)][string]$message,
+        [Parameter(Mandatory = $false)][System.ConsoleColor]$consoleColor = [System.ConsoleColor]::Gray
+    )
+    $defaultConsoleColor = $host.UI.RawUI.ForegroundColor;
+    $host.UI.RawUI.ForegroundColor = $consoleColor;
+    Write-Information -InformationAction Continue -MessageData "[$((Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss"))]: $message";
+    $host.UI.RawUI.ForegroundColor = $defaultConsoleColor;
+    return;
+}
+function Show-HttpErrorResponse {
+    $script:httpErrorResponse | Format-List;
+}
 function Show-LastErrorDetails {
     param(
         $lastError = $Error[0]
@@ -135,11 +159,44 @@ function Show-LastErrorDetails {
     $lastError.InvocationInfo | Format-List -Property *;
     $exception = $lastError.Exception;
     for ($depth = 0; $null -ne $exception; $depth++) {
-        Write-Host "$depth" * 80 -ForegroundColor Green;                                            
-        $exception | Format-List -Property * -Force                 
-        $exception = $exception.InnerException                      
+        Show-InformationalMessage -message "$depth" * 80 -consoleColor Green;
+        $exception | Format-List -Property * -Force;               
+        $exception = $exception.InnerException;                
     }
-}  
+}
+function Set-RootString {
+    param(
+        [Parameter(Mandatory = $true)][Office365SubscriptionPlanType]$office365SubscriptionPlanType
+    )
+    switch ($office365SubscriptionPlanType) {
+        Enterpriseplan {
+            $script:root = 'https://manage.office.com';
+            Break; 
+        }
+        GCCGovernmentPlan { 
+            $script:root = 'https://manage-gcc.office.com';
+            Break;
+        }
+        GCCHighGovernmentPlan {
+            $script:root = 'https://manage.office365.us';
+            Break;
+        }
+        DoDGovernmentPlan { 
+            $script:root = 'https://manage.protection.apps.mil';
+            Break;
+        }
+        GallatinPlan { 
+            $script:root = 'https://manage.office365.cn';            
+            Break;
+        }
+        Default {
+            Write-Error "unknown type: $contentTypeData" -ErrorAction Stop;
+        }        
+    }
+    $script:scope = "$script:root/.default";
+    Show-VerboseMessage -message "Root of Office365 Management API endpoint: $($script:root) and scope: $($script:scope)";    
+    return;
+}
 function Get-ContentTypeString {
     param(
         [Parameter(Mandatory = $true)][ContentType]$contentTypeData
@@ -183,13 +240,19 @@ Function Invoke-O365APIHttpRequest {
     )
     if ($null -eq $script:AuthResult) {
         Write-Error "Not authenticated. Stop." -ErrorAction Stop;
+    }    
+    Show-VerboseMessage "Invoke-Webrequest $url $httpVerb";
+    if ($PSBoundParameters.ContainsKey('requstBody')) {
+        Show-VerboseMessage "request body: $requstBody";        
     }
     $httpResponse = $null;
     $script:httpErrorResponse = $null;
     $retryCount = 0;
     do {
         if ($retryCount -gt 1) {
-            Start-Sleep -Seconds ($script:sleepSeconds * $retryCount);
+            $sleepSeconds = [math]::Pow($script:sleepSeconds, $retryCount);
+            Show-VerboseMessage "Retry Invoke-O365APIHttpRequest $($httpVerb) $($url): $retryCount after $($sleepSeconds) seconds";
+            Start-Sleep -Seconds $sleepSeconds;
         }
         Get-OauthToken;
         $headerParams = @{'Authorization' = "$($script:AuthResult.tokentype) $($script:AuthResult.accesstoken)" };
@@ -202,6 +265,7 @@ Function Invoke-O365APIHttpRequest {
             }
         }
         catch {
+            Show-InformationalMessage -message "Http error: $($_.Exception.Response) Body: $($_.ErrorDetails.Message)" -consoleColor Red;
             $script:httpErrorResponse = $_.Exception.Response;
         }
         finally {
@@ -210,6 +274,7 @@ Function Invoke-O365APIHttpRequest {
     } until (($null -ne $httpResponse) -or ($retryCount -gt $script:maxretries))
 
     if (($null -ne $httpResponse) -and ($httpResponse.StatusCode -in (200, 204))) {
+        Show-VerboseMessage "HTTP Response: $($httpResponse.RawContent)";        
         Write-Output $httpResponse;
         return;
     }
@@ -217,30 +282,34 @@ Function Invoke-O365APIHttpRequest {
     Write-Error "API request fails with error. Stop!" -ErrorAction Stop;
 }
 function Get-OauthToken {
+    Show-VerboseMessage "Start to invoke Get-OauthToken";
     $utcNow = (get-date).ToUniversalTime().AddMinutes(1);
     if ($null -ne $script:AuthResult -and ($utcNow -lt $script:AuthResult.ExpiresOn.UtcDateTime)) {
+        Show-VerboseMessage "Current accesstoken is valid before $($script:AuthResult.ExpiresOn.UtcDateTime)";
         return;
     }
     if (-not [string]::IsNullOrWhiteSpace($script:redirectUri)) {
         try {
-            $script:AuthResult = Get-MsalToken -ClientId $script:clientId -TenantId $script:tenantID -Silent -LoginHint $script:loginHint -RedirectUri $script:redirectUri -Scopes $script:Scope;
+            Show-VerboseMessage "Get-MsalToken via user sign-in";
+            $script:AuthResult = Get-MsalToken -ClientId $script:clientId -TenantId $script:tenantID -Silent -LoginHint $script:loginHint -RedirectUri $script:redirectUri -Scopes $script:scope;
         }
         Catch [Microsoft.Identity.Client.MsalUiRequiredException] {
-            $script:AuthResult = Get-MsalToken -ClientId $script:clientId -TenantId $script:tenantID -Interactive -LoginHint $script:loginHint -RedirectUri $script:redirectUri -Scopes $script:Scope; ;
+            $script:AuthResult = Get-MsalToken -ClientId $script:clientId -TenantId $script:tenantID -Interactive -LoginHint $script:loginHint -RedirectUri $script:redirectUri -Scopes $script:scope; ;
         }
         Catch {
             Show-LastErrorDetails;
-            Write-Error -Message "Can not get the access token, stop." -ErrorAction Stop;
+            Write-Error -Message "Can not get the access token, exit." -ErrorAction Stop;
         }
     }
     else {
         try {
             if (-not [string]::IsNullOrWhiteSpace($script:clientsecret)) {
+                Show-VerboseMessage "Get-MsalToken via client crendential auth flow";
                 $securedclientSecret = ConvertTo-SecureString $script:clientsecret -AsPlainText -Force
-                $script:AuthResult = Get-MsalToken -clientID $script:clientId -ClientSecret $securedclientSecret -tenantID $script:tenantID -Scopes $script:Scope;
+                $script:AuthResult = Get-MsalToken -clientID $script:clientId -ClientSecret $securedclientSecret -tenantID $script:tenantID -Scopes $script:scope;
             }
             elseif ($null -ne $script:clientcertificate) {
-                $script:AuthResult = Get-MsalToken -clientID $script:clientId -ClientCertificate $script:clientcertificate -tenantID $script:tenantID -Scopes $script:Scope;
+                $script:AuthResult = Get-MsalToken -clientID $script:clientId -ClientCertificate $script:clientcertificate -tenantID $script:tenantID -Scopes $script:scope;
             }        
         }
         catch {
@@ -248,6 +317,7 @@ function Get-OauthToken {
             Write-Error -Message "Can not get the access token, stop." -ErrorAction Stop;
         }
     }
+    Show-VerboseMessage "Succeed to invoke Get-OauthToken";
 }
 function Connect-Office365ManagementAPI {
     param (
@@ -256,7 +326,8 @@ function Connect-Office365ManagementAPI {
         [Parameter(Mandatory = $true, ParameterSetName = "authorizationcode")][String]$redirectUri,
         [Parameter(Mandatory = $true, ParameterSetName = "authorizationcode")][String]$loginHint,    
         [Parameter(Mandatory = $true, ParameterSetName = "clientcredentialsSecret")][String]$clientsecret,
-        [Parameter(Mandatory = $true, ParameterSetName = "clientcredentialsCertificate")][X509Certificate]$clientcertificate
+        [Parameter(Mandatory = $true, ParameterSetName = "clientcredentialsCertificate")][X509Certificate]$clientcertificate,
+        [Parameter(Mandatory = $false)][Office365SubscriptionPlanType]$office365SubscriptionPlanType = [Office365SubscriptionPlanType]::Enterpriseplan
     )
     $script:tenantID = $tenantID;
     $script:clientId = $clientId;
@@ -273,46 +344,63 @@ function Connect-Office365ManagementAPI {
     else {
         Write-Error "Not implement." -ErrorAction Stop;
     }
+    Set-RootString $office365SubscriptionPlanType;
     Get-OauthToken;
     if ($null -eq $script:AuthResult) {
         Write-Error "Can not connect to Office365 Management API. Please check your app registration in AAD." -ErrorAction Stop;
     }
-    Write-Host "Successfuly Connect to Office365 Management API" -ForegroundColor Green;
+    Show-InformationalMessage -message "Successfuly Connect to Office365 Management API" -consoleColor Green;
 }
 function Start-Subscription {
     param (
         [Parameter(Mandatory = $true)][ContentType]$contentType,        
         [Parameter(Mandatory = $false)][string]$webhook
     )
-    Stop-Subscription -contentType $contentType;
     $contentTypestring = Get-ContentTypeString $contentType;
-    $subscriptionUrl = "https://manage.office.com/api/v1.0/$($script:tenantID)/activity/feed/subscriptions/start?contentType=$contentTypestring";
-    if ($PSBoundParameters.ContainsKey("webhook")) {
-        $httpResponse = Invoke-O365APIHttpRequest -url $subscriptionUrl -httpVerb Post -requstBody $webhook;        
+    $Subscriptions = Get-CurrentSubscriptions;
+    $subscribedContentType = @($Subscriptions | Where-Object { $PSItem.status -eq "enabled" -and $PSItem.contentType -eq $contentTypeString } );
+    if ($subscribedContentType.Count -eq 0) {
+        $subscriptionUrl = "$($script:root)/api/v1.0/$($script:tenantID)/activity/feed/subscriptions/start?contentType=$contentTypestring";
+        if ($PSBoundParameters.ContainsKey("webhook")) {
+            $httpResponse = Invoke-O365APIHttpRequest -url $subscriptionUrl -httpVerb Post -requstBody $webhook;        
+        }
+        else {
+            $httpResponse = Invoke-O365APIHttpRequest -url $subscriptionUrl -httpVerb Post;        
+        }
     }
     else {
-        $httpResponse = Invoke-O365APIHttpRequest -url $subscriptionUrl -httpVerb Post;        
+        Show-InformationalMessage -message "The subscription of $contentType has been started already, and please stop it before start with new parameters" -consoleColor Yellow;
     }
-    Write-Host $httpResponse;
+    $httpResponse | Format-List;
 }
 function Stop-Subscription {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     param (
         [Parameter(Mandatory = $true)][ContentType]$contentType
-    )    
-    $contentTypestring = Get-ContentTypeString $contentType;
-    $subscriptionUrl = "https://manage.office.com/api/v1.0/$($script:tenantID)/activity/feed/subscriptions/stop?contentType=$contentTypestring";
-    $httpResponse = Invoke-O365APIHttpRequest -url $subscriptionUrl -httpVerb Post;
-    Write-Host $httpResponse;
+    )
+    if ($PSCmdlet.ShouldProcess($contentType)) {
+        $contentTypestring = Get-ContentTypeString $contentType;
+        $subscriptionUrl = "$($script:root)/api/v1.0/$($script:tenantID)/activity/feed/subscriptions/stop?contentType=$contentTypestring";
+        $httpResponse = Invoke-O365APIHttpRequest -url $subscriptionUrl -httpVerb Post;
+        $httpResponse | Format-List;
+    }
+    else {
+        Show-InformationalMessage -message "The user decide to not stop subscription $contentType" -consoleColor Yellow;
+    }
 }
 function Stop-Subscriptions {
-    $contentTypes = @(Get-CurrentSubscriptions | Where-Object { $_.status -eq "enabled" } | ForEach-Object { $psitem.contentType });
-    $contentTypes | ForEach-Object {
-        $contentType = Get-ContentTypeEnum $PSItem;
-        Stop-Subscription -contentType $contentType;
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+    param()
+    if ($PSCmdlet.ShouldProcess('TARGET')) {
+        $contentTypes = @(Get-CurrentSubscriptions | Where-Object { $_.status -eq "enabled" } | ForEach-Object { $psitem.contentType });
+        $contentTypes | ForEach-Object {
+            $contentType = Get-ContentTypeEnum $PSItem;
+            Stop-Subscription -contentType $contentType -Confirm:$false;
+        }
     }
 }
 function Get-CurrentSubscriptions {
-    $listSubscriptionURI = "https://manage.office.com/api/v1.0/$($script:tenantID)/activity/feed/subscriptions/list";
+    $listSubscriptionURI = "$($script:root)/api/v1.0/$($script:tenantID)/activity/feed/subscriptions/list";
     $httpResponse = Invoke-O365APIHttpRequest -url $listSubscriptionURI -httpVerb Get;    
     $convertObjects = $httpResponse.Content | Out-String | ConvertFrom-Json;
     $subscriptions = New-Object Collections.Generic.List[Subscription];
@@ -329,16 +417,27 @@ function Get-CurrentSubscriptions {
 function Get-AvailableContent {
     param (
         [Parameter(Mandatory = $true)][datetime]$startTime,        
-        [Parameter(Mandatory = $true)][datetime]$endTime
-    )    
+        [Parameter(Mandatory = $true)][datetime]$endTime,
+        [Parameter(Mandatory = $false)][ContentType]$contentType
+    )
     $Subscriptions = Get-CurrentSubscriptions;
     $contentTypes = @($Subscriptions | Where-Object { $_.status -eq "enabled" } | ForEach-Object { $psitem.contentType });
+    if ($PSBoundParameters.ContainsKey('contentType')) {
+        $contentTypeString = Get-ContentTypeString $contentType;
+        $contentTypes = @($contentTypes | Where-Object { $PSItem -eq $contentTypeString });
+    }
+    if ($contentTypes.Count -eq 0) {
+        Write-Warning "The subscription of the sepcify ContentType or any ContentType has been not started yet.";
+        return;
+    }   
     $availableContent = New-Object Collections.Generic.List[Blob];
+    Show-VerboseMessage "Run Get-AvailableContent for the contenttypes $contentTypes";
     $contentTypes | ForEach-Object {
         $enabledContentType = $psitem;
-        # List available content
-        $contentUrl = "https://manage.office.com/api/v1.0/$($script:tenantID)/activity/feed/subscriptions/content?contentType=$enabledContentType&startTime=" + $startTime + "&endTime=" + $endTime;
+        # List available content        
+        $contentUrl = "$($script:root)/api/v1.0/$($script:tenantID)/activity/feed/subscriptions/content?contentType=$enabledContentType&startTime=" + $startTime + "&endTime=" + $endTime;        
         While (-not [string]::IsNullOrEmpty($contentUrl)) {
+            Show-VerboseMessage "List available content via the Url $contentUrl";
             $httpResponse = Invoke-O365APIHttpRequest -url $contentUrl -httpVerb Get; 
             $convertObjs = ConvertFrom-Json $httpResponse.Content;
             $convertObjs | ForEach-Object {
@@ -349,6 +448,10 @@ function Get-AvailableContent {
                 $blob.contentCreated = $psitem.contentCreated;
                 $blob.contentExpiration = $psitem.contentExpiration;
                 $availableContent.Add($blob);
+            }
+            if ($null -ne $httpResponse.Headers.'NextPageUri') {
+                $nextPageUri = $httpResponse.Headers.'NextPageUri';
+                Show-VerboseMessage "NextPageUri is $nextPageUri";
             }
             $contentUrl = $httpResponse.Headers.'NextPageUri';
         }
@@ -361,13 +464,14 @@ function Receive-Content {
         [Parameter(Mandatory = $true)][System.Object[]]$blobs
     )
     if (($null -eq $blobs) -or ($blobs.Count -eq 0)) {
-        Write-Host "No available content, exit!" -ForegroundColor Red;
+        Show-InformationalMessage "No available content, exit!" -consoleColor Yellow;
         return;
     }
     $blobs | ForEach-Object {    
         try {
             $blob = $PSItem -as [Blob];
             if ($null -ne $blob) {
+                Show-VerboseMessage "Receive content from the content Url $($blob.contentUri)";
                 $httpResponse = Invoke-O365APIHttpRequest -url $blob.contentUri -httpVerb Get; 
                 $contents = $httpResponse;
                 if ($null -ne $contents) {
@@ -375,7 +479,7 @@ function Receive-Content {
                     $blob.auditRecords = $auditRecords;
                 }
                 else {
-                    Write-Error "Can not receive content for $($blob)";
+                    Write-Error "Can not receive content for $($blob)" -ErrorAction Continue;
                 }
             }            
         }
@@ -385,7 +489,7 @@ function Receive-Content {
     }
 }
 function Receive-Notifications {
-    Write-Output "The content notifications will be sent to the webhook. Can not implement this method in PowerShell script."
+    Show-InformationalMessage -message "The content notifications are sent to the webhook. We can not implement this operation in PowerShell Module" -consoleColor Yellow;
 }
 function Get-Notifications {
     param (
@@ -394,7 +498,8 @@ function Get-Notifications {
         [Parameter(Mandatory = $true)][ContentType]$contentType
     )
     $contentTypestring = Get-ContentTypeString $contentType;
-    $listNotificationsUrl = "https://manage.office.com/api/v1.0/$($script:tenantID)/activity/feed/subscriptions/notifications?contentType=$contentTypestring&startTime=" + $startTime + "&endTime=" + $endTime;
+    $listNotificationsUrl = "$($script:root)/api/v1.0/$($script:tenantID)/activity/feed/subscriptions/notifications?contentType=$contentTypestring&startTime=" + $startTime + "&endTime=" + $endTime;
+    Write-Verbose "List notifications via the Url $listNotificationsUrl";
     $httpResponse = Invoke-O365APIHttpRequest -url $listNotificationsUrl -httpVerb Get;
     $convertObjs = ConvertFrom-Json $httpResponse.Content;
     $notifications = New-Object Collections.Generic.List[Notification];
@@ -409,13 +514,16 @@ function Get-Notifications {
         $notificationObj.contentExpiration = $psitem.contentExpiration;
         $notifications.Add($notificationObj);
     }
-    Write-Output $notifications;        
+    Write-Output $notifications;
+    return;      
 }
 function Receive-ResourceFriendlyNames {
-    $url = "https://manage.office.com/api/v1.0/$($script:tenantID)/activity/feed/resources/dlpSensitiveTypes";
+    $url = "$($script:root)/api/v1.0/$($script:tenantID)/activity/feed/resources/dlpSensitiveTypes";
+    Show-VerboseMessage "Receive resource FriendlyNames via the Url $url";
     $httpResponse = Invoke-O365APIHttpRequest -url $url -httpVerb Get;
     $friendlyNames = $httpResponse.Content | Out-String | ConvertFrom-Json;
     Write-Output $friendlyNames;
+    return;
 }
 function Disconnect-Office365ManagementAPI {
     $script:tenantID = $null;
@@ -425,6 +533,9 @@ function Disconnect-Office365ManagementAPI {
     $script:loginHint = $null;
     $script:clientcertificate = $null;
     $script:AuthResult = $null;
-    Write-Host "Successfuly Disconnect to Office365 Management API" -ForegroundColor Green;
+    $script:root = $null;
+    $script:scope = $null; 
+    $script:httpErrorResponse = $null;
+    Show-InformationalMessage -message "Successfuly Disconnect to Office365 Management API" -consoleColor Green;
 }
 Export-ModuleMember Disconnect-Office365ManagementAPI, Receive-ResourceFriendlyNames, Get-Notifications, Receive-Notifications, Receive-Content, Get-AvailableContent, Get-CurrentSubscriptions, Stop-Subscriptions, Stop-Subscription, Start-Subscription, Connect-Office365ManagementAPI;
