@@ -10,72 +10,74 @@
    https://www.powershellgallery.com/packages/ZIZHUOffice365ManagementAPI/1.0
    https://github.com/APACMW/APACMWOffice365ManagementAPIModule 
    Install-Module -Name ZIZHUOffice365ManagementAPI
+   Import-Module -Name ZIZHUOffice365ManagementAPI
 
  .Example
    # Connect to ZIZHUOffice365ManagementAPI module via client secret
-$clientID = 'bc4db1db-b705-434a-91ff-145aa94185c8';
-$tenantId = 'cff343b2-f0ff-416a-802b-28595997daa2';
-$clientSecret = '';
-Connect-Office365ManagementAPI -tenantID $tenantId -clientID $clientID -ClientSecret $clientSecret;
+    $clientID = 'bc4db1db-b705-434a-91ff-145aa94185c8';
+    $tenantId = 'cff343b2-f0ff-416a-802b-28595997daa2';
+    $clientSecret = '';
+    Connect-Office365ManagementAPI -tenantID $tenantId -clientID $clientID -ClientSecret $clientSecret;
    
    # Connect to ZIZHUOffice365ManagementAPI module via client certificate
-$clientID = 'bc4db1db-b705-434a-91ff-145aa94185c8';
-$tenantId = 'cff343b2-f0ff-416a-802b-28595997daa2';
-$thumbprint = '15958E05E3E4C2E563CE9BC346B25A2D70867048';
-$clientcertificate= get-item "cert:\localmachine\my\$thumbprint";
-Connect-Office365ManagementAPI -tenantID $tenantId -clientID $clientID -clientcertificate $clientcertificate;
+    $clientID = 'bc4db1db-b705-434a-91ff-145aa94185c8';
+    $tenantId = 'cff343b2-f0ff-416a-802b-28595997daa2';
+    $thumbprint = '15958E05E3E4C2E563CE9BC346B25A2D70867048';
+    $clientcertificate= get-item "cert:\localmachine\my\$thumbprint";
+    Connect-Office365ManagementAPI -tenantID $tenantId -clientID $clientID -clientcertificate $clientcertificate;
 
    # Connect to ZIZHUOffice365ManagementAPI module via user sign-in
-$clientID = '9b0547c4-28b1-466d-a80e-677c6dc42d42';
-$tenantId = 'cff343b2-f0ff-416a-802b-28595997daa2';
-$redirectUri='https://login.microsoftonline.com/common/oauth2/nativeclient'
-$loginHint = 'freeman@vjqg8.onmicrosoft.com';
-Connect-Office365ManagementAPI -tenantID $tenantId -clientID $clientID -loginHint $loginHint -redirectUri $redirectUri;
+    $clientID = '9b0547c4-28b1-466d-a80e-677c6dc42d42';
+    $tenantId = 'cff343b2-f0ff-416a-802b-28595997daa2';
+    $redirectUri='https://login.microsoftonline.com/common/oauth2/nativeclient'
+    $loginHint = 'freeman@vjqg8.onmicrosoft.com';
+    Connect-Office365ManagementAPI -tenantID $tenantId -clientID $clientID -loginHint $loginHint -redirectUri $redirectUri;
 
    # List available content and receive audit data
-$startTime = "2024-03-24T00:00:00"; 
-$endTime = "2024-03-25T00:00:00";
-$blobs = Get-AvailableContent -startTime $startTime -endTime $endTime;
-Receive-Content -blobs $blobs;
+    $startTime = "2024-04-04T00:00:00"; 
+    $endTime = "2024-04-05T00:00:00";
+    $blobs = Get-AvailableContent -startTime $startTime -endTime $endTime;
+    Receive-Content -blobs $blobs;
 
    # Get current subscriptions/Stop subscriptions
-Get-CurrentSubscriptions;
-Stop-Subscription -contentType AuditSharePoint;
-Stop-Subscriptions;
+    Get-CurrentSubscriptions;
+    Stop-Subscription -contentType AuditSharePoint;
+    Stop-Subscriptions;
 
    # Start thesubscriptions. If don't pass $webHookBody, no webhook for the subscription
-$webhookEndpoint='https://3b34-2404-f801-9000-18-b055-6c1c-9de7-1729.ngrok-free.app/api/O365ManagementAPIHttpFunction';
-$authId = 'ZIZHUOffice365ManagementAPINotification20240220';
-$expiration= "2024-04-14T00:00:00";
-$webHookBody=
-@"
-{
-    "webhook" : {
-        "address": "$($webhookEndpoint)",
-        "authId": "$($authId)",
-        "expiration": "$($expiration)"
+    $webhookEndpoint='https://5a22-2404-f801-9000-1a-efea-00-23.ngrok-free.app/api/O365ManagementAPIHttpFunction';
+    $authId = 'ZIZHUOffice365ManagementAPINotification20240220';
+    $expiration= "2024-04-14T00:00:00";
+    $webHookBody=
+    @"
+    {
+        "webhook" : {
+            "address": "$($webhookEndpoint)",
+            "authId": "$($authId)",
+            "expiration": "$($expiration)"
+        }
     }
-}
-"@;
-Start-Subscription AuditAzureActiveDirectory $webHookBody;
-Start-Subscription AuditExchange $webHookBody;
-Start-Subscription AuditSharePoint $webHookBody;
-Start-Subscription AuditGeneral $webHookBody;
-Start-Subscription DLPAll $webHookBody;
+    "@;
+    Start-Subscription AuditAzureActiveDirectory $webHookBody;
+    Start-Subscription AuditExchange $webHookBody;
+    Start-Subscription AuditSharePoint $webHookBody;
+    Start-Subscription AuditGeneral $webHookBody;
+    Start-Subscription DLPAll $webHookBody;
 
   # List the notifications
-$startTime = "2024-03-24T00:00:00"; 
-$endTime = "2024-03-25T00:00:00";
-Get-Notifications -startTime $startTime -endTime $endTime -contentType AuditExchange;
+    $startTime = "2024-04-05T00:00:00"; 
+    $endTime = "2024-04-06T00:00:00";
+    Get-Notifications -startTime $startTime -endTime $endTime -contentType AuditExchange;
 
   # Receive the FriendlyNames for DLP Resource
-Receive-ResourceFriendlyNames;
+    Receive-ResourceFriendlyNames;
 
   # Clean after usgae
-Disconnect-Office365ManagementAPI;
-Get-Module ZIZHUOffice365ManagementAPI | Remove-Module;
+    Disconnect-Office365ManagementAPI;
+    Get-Module ZIZHUOffice365ManagementAPI | Remove-Module;
 #>
 
+# Define the tenant environment types
 enum Office365SubscriptionPlanType {
     Enterpriseplan    
     GCCGovernmentPlan
@@ -83,6 +85,7 @@ enum Office365SubscriptionPlanType {
     DoDGovernmentPlan
     GallatinPlan
 }
+# Define the content types
 enum ContentType {
     AuditAzureActiveDirectory    
     AuditExchange
@@ -90,6 +93,7 @@ enum ContentType {
     AuditGeneral
     DLPAll
 }
+# Define the Blob type as an Azure storage unit to keep the audit data
 class Blob {
     [string]$contentUri
     [string]$contentId
@@ -130,7 +134,7 @@ $script:AuthResult = $null;
 $script:httpErrorResponse = $null;
 $script:maxretries = 4;
 $script:sleepSeconds = 2;
-function Show-VerboseMessage {
+function Show-VerboseMessage {    
     param(
         [Parameter(Mandatory = $true)][string]$message
     )    
@@ -149,11 +153,15 @@ function Show-InformationalMessage {
     return;
 }
 function Show-HttpErrorResponse {
-    $script:httpErrorResponse | Format-List;
+    param(
+        [Parameter(Mandatory = $true)][object]$httpErrorResponse
+    )
+    $httpError = $httpErrorResponse | Format-List | Out-String;
+    Show-InformationalMessage -message $httpError -consoleColor Red;
 }
 function Show-LastErrorDetails {
     param(
-        $lastError = $Error[0]
+        [Parameter(Mandatory = $false)]$lastError = $Error[0]
     )
     $lastError | Format-List -Property * -Force;
     $lastError.InvocationInfo | Format-List -Property *;
@@ -164,7 +172,115 @@ function Show-LastErrorDetails {
         $exception = $exception.InnerException;                
     }
 }
+function Show-AppPermissions {
+    <#
+    .SYNOPSIS
+    Show the API permissions in the access token
+    
+    .DESCRIPTION
+    Show the API permissions in the access token
+    
+    .PARAMETER jwtToken
+    The accesstoken string
+    
+    .EXAMPLE
+    Show-AppPermissions $accesstoken
+    
+    .NOTES
+    Just show the API permissions. Not enforce to must have the specific permissions
+    #>
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$jwtToken
+    )
+    $decodedToken = Read-JWTtoken -token $jwtToken;
+    if ($null -ne $decodedToken -and $null -ne $decodedToken.scp) {
+        $permissions = $decodedToken.scp;
+    }
+    elseif ($null -ne $decodedToken -and $null -ne $decodedToken.roles) {
+        $permissions = $decodedToken.roles;
+    }
+    else {
+        $permissions = $null;
+    }
+    Show-InformationalMessage -message "API permissions in the AccessToke: $($permissions)" -consoleColor Yellow;
+}
+function Read-JWTtoken {
+    <#
+    .SYNOPSIS
+    Parse the access token/ID token based on https://datatracker.ietf.org/doc/html/rfc7519
+    
+    .DESCRIPTION
+    Parse the access token/ID token based on https://datatracker.ietf.org/doc/html/rfc7519
+    
+    .PARAMETER token
+    The accesstoken/ID token string
+    
+    .EXAMPLE
+    Read-JWTtoken -token $jwtToken
+    
+    .NOTES
+    https://datatracker.ietf.org/doc/html/rfc7519
+    #>
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$token
+    )
+    # Validate Access and ID tokens per RFC 7519
+    if (!$token.Contains(".") -or !$token.StartsWith("eyJ")) {
+        Show-InformationalMessage -message "Invalid token" -consoleColor Red;
+        return;
+    }
+    # Parse the Header
+    $tokenheader = $token.Split(".")[0].Replace('-', '+').Replace('_', '/');
+    # Fix padding as needed; keep adding "=" until string length modulus 4 reaches 0
+    while ($tokenheader.Length % 4) {
+        Show-VerboseMessage -message "Invalid length for a Base-64 char array or string, adding =";
+        $tokenheader += "=";
+    }
+    Show-VerboseMessage -message "Base64 encoded (padded) header:"
+    Show-VerboseMessage -message $tokenheader;
+
+    # Convert from Base64 encoded string to PSObject
+    Show-VerboseMessage -message "Decoded header:"
+    $headers = [System.Text.Encoding]::ASCII.GetString([system.convert]::FromBase64String($tokenheader)) | ConvertFrom-Json | Format-List | Out-String;
+    Show-VerboseMessage -message $headers;
+
+    # Payload
+    $tokenPayload = $token.Split(".")[1].Replace('-', '+').Replace('_', '/');
+    # Fix padding as needed; keep adding "=" until string length modulus 4 reaches 0
+    while ($tokenPayload.Length % 4) {
+        Show-VerboseMessage -message "Invalid length for a Base-64 char array or string, adding =";
+        $tokenPayload += "=";
+    }
+    Show-VerboseMessage -message "Base64 encoded (padded) payload:";
+    Show-VerboseMessage -message $tokenPayload;
+
+    # Convert to Byte array
+    $tokenByteArray = [System.Convert]::FromBase64String($tokenPayload);
+    # Convert to string array
+    $tokenArray = [System.Text.Encoding]::ASCII.GetString($tokenByteArray);
+    Show-VerboseMessage -message "Decoded array in JSON format:"
+    Show-VerboseMessage -message $tokenArray
+
+    # Convert from JSON to PSObject
+    $tokenObj = $tokenArray | ConvertFrom-Json;
+    Show-VerboseMessage -message "Decoded Payload:"
+    Write-Output $tokenObj;
+    return;
+}
+
 function Set-RootString {
+    <#
+    .SYNOPSIS
+    Based on the tenant type to specify Office365 management API endpoint
+    
+    .DESCRIPTION
+    Based on the tenant type to specify Office365 management API endpoint
+    
+    .PARAMETER office365SubscriptionPlanType
+    The tenant type (data type enum Office365SubscriptionPlanType)
+    #>
     param(
         [Parameter(Mandatory = $true)][Office365SubscriptionPlanType]$office365SubscriptionPlanType
     )
@@ -198,6 +314,16 @@ function Set-RootString {
     return;
 }
 function Get-ContentTypeString {
+    <#
+    .SYNOPSIS
+    From the contentType(enum), to generate the relevant content type script used for Http request
+    
+    .DESCRIPTION
+    From the contentType(enum), to generate the relevant content type script used for Http request
+    
+    .PARAMETER contentTypeData
+    Specify the contentTypeData (enum ContentType)    
+    #>
     param(
         [Parameter(Mandatory = $true)][ContentType]$contentTypeData
     )
@@ -216,6 +342,16 @@ function Get-ContentTypeString {
     return;
 }
 function Get-ContentTypeEnum {
+    <#
+    .SYNOPSIS
+    Based on contenttype stirng to get the contentType as enum data type
+    
+    .DESCRIPTION
+    Based on contenttype stirng to get the contentType as enum data type
+    
+    .PARAMETER contentTypeString
+    The content type string    
+    #>
     param(
         [Parameter(Mandatory = $true)][string]$contentTypeString
     )
@@ -233,6 +369,22 @@ function Get-ContentTypeEnum {
     return;
 }
 Function Invoke-O365APIHttpRequest {
+    <#
+    .SYNOPSIS
+    Sumbit the Http requests for all Ofice365 Management API operations with retry logic
+    
+    .DESCRIPTION
+    Sumbit the Http requests for all Ofice365 Management API operations with retry logic
+    
+    .PARAMETER url
+    Office365 Management API Request Url
+    
+    .PARAMETER httpVerb
+    Http verb
+    
+    .PARAMETER requstBody
+    The Http request body. Optional  
+    #>
     param (
         [Parameter(Mandatory = $true)][string]$url,
         [Parameter(Mandatory = $true)][string]$httpVerb,
@@ -245,9 +397,12 @@ Function Invoke-O365APIHttpRequest {
     if ($PSBoundParameters.ContainsKey('requstBody')) {
         Show-VerboseMessage "request body: $requstBody";        
     }
+    # Used for retry logic
     $httpResponse = $null;
     $script:httpErrorResponse = $null;
     $retryCount = 0;
+
+    # If fail, retry 4 times (but stop when response (Unauthorized,BadRequest))
     do {
         if ($retryCount -gt 1) {
             $sleepSeconds = [math]::Pow($script:sleepSeconds, $retryCount);
@@ -271,23 +426,38 @@ Function Invoke-O365APIHttpRequest {
         finally {
             $retryCount = $retryCount + 1;
         }
-    } until (($null -ne $httpResponse) -or ($retryCount -gt $script:maxretries))
+    } until ((($null -ne $httpResponse) -or ($retryCount -gt $script:maxretries)) -or (($null -ne $script:httpErrorResponse) -and ($script:httpErrorResponse.StatusCode -in @('Unauthorized', 'BadRequest'))))
 
+    # If succeed, then pass the Http response in output stream to caller
     if (($null -ne $httpResponse) -and ($httpResponse.StatusCode -in (200, 204))) {
         Show-VerboseMessage "HTTP Response: $($httpResponse.RawContent)";        
         Write-Output $httpResponse;
         return;
     }
-    Show-HttpErrorResponse;
+
+    # If fail, show the error information and stop
+    Show-HttpErrorResponse -httpErrorResponse $script:httpErrorResponse;
     Write-Error "API request fails with error. Stop!" -ErrorAction Stop;
 }
 function Get-OauthToken {
+    <#
+    .SYNOPSIS
+    Use the Msal.ps module to get the access token. Support client credential, Implicit auth flow
+    
+    .DESCRIPTION
+    Use the Msal.ps module to get the access token. Support client credential, Implicit auth flow
+    
+    .NOTES
+    Use the variables from script scope
+    #>
     Show-VerboseMessage "Start to invoke Get-OauthToken";
+    # If the access token is valid, then use an existing token
     $utcNow = (get-date).ToUniversalTime().AddMinutes(1);
     if ($null -ne $script:AuthResult -and ($utcNow -lt $script:AuthResult.ExpiresOn.UtcDateTime)) {
         Show-VerboseMessage "Current accesstoken is valid before $($script:AuthResult.ExpiresOn.UtcDateTime)";
         return;
     }
+    # Implicit auth flow (delegated API permissions). Will try to get the access token silently. If fail, then interactive sign-in
     if (-not [string]::IsNullOrWhiteSpace($script:redirectUri)) {
         try {
             Show-VerboseMessage "Get-MsalToken via user sign-in";
@@ -301,6 +471,7 @@ function Get-OauthToken {
             Write-Error -Message "Can not get the access token, exit." -ErrorAction Stop;
         }
     }
+    # Client credential auth flow. Can use the client secret or certificate
     else {
         try {
             if (-not [string]::IsNullOrWhiteSpace($script:clientsecret)) {
@@ -320,6 +491,40 @@ function Get-OauthToken {
     Show-VerboseMessage "Succeed to invoke Get-OauthToken";
 }
 function Connect-Office365ManagementAPI {
+    <#
+    .SYNOPSIS
+    Initilize the script varibles to prepare for calling APIs
+    
+    .DESCRIPTION
+    Initilize the script varibles to prepare for calling APIs
+    
+    .PARAMETER tenantID
+    tenant id
+    
+    .PARAMETER clientId
+    Azure AD application Id
+    
+    .PARAMETER redirectUri
+    The redirectUri used for implicit auth flow
+    
+    .PARAMETER loginHint
+    The loginHint (user's UPN) used for implicit auth flow
+    
+    .PARAMETER clientsecret
+    The clientsecret used for client credential auth flow
+    
+    .PARAMETER clientcertificate
+    The clientcertificate used for client credential auth flow
+    
+    .PARAMETER office365SubscriptionPlanType
+    Tenant type
+    
+    .EXAMPLE
+    Connect-Office365ManagementAPI -tenantID $tenantId -clientID $clientID -ClientSecret $clientSecret;
+    
+    .NOTES
+    Read how to register the app in Azure AD: https://learn.microsoft.com/en-us/office/office-365-management-api/get-started-with-office-365-management-apis
+    #>
     param (
         [Parameter(Mandatory = $true)][string]$tenantID,
         [Parameter(Mandatory = $true)][String]$clientId,        
@@ -344,14 +549,34 @@ function Connect-Office365ManagementAPI {
     else {
         Write-Error "Not implement." -ErrorAction Stop;
     }
-    Set-RootString $office365SubscriptionPlanType;
+    Set-RootString $office365SubscriptionPlanType;    
     Get-OauthToken;
     if ($null -eq $script:AuthResult) {
         Write-Error "Can not connect to Office365 Management API. Please check your app registration in AAD." -ErrorAction Stop;
-    }
+    }    
+    Show-AppPermissions $script:AuthResult.accesstoken;
     Show-InformationalMessage -message "Successfuly Connect to Office365 Management API" -consoleColor Green;
 }
 function Start-Subscription {
+    <#
+    .SYNOPSIS
+    Start Subscription for a content type
+    
+    .DESCRIPTION
+    Start Subscription for a content type
+    
+    .PARAMETER contentType
+    The mandatory content type
+    
+    .PARAMETER webhook
+    The optional webhook 
+    
+    .EXAMPLE
+    Start-Subscription DLPAll $webHookBody;
+    
+    .NOTES
+    reference: https://learn.microsoft.com/en-us/office/office-365-management-api/office-365-management-activity-api-reference#start-a-subscription
+    #>
     param (
         [Parameter(Mandatory = $true)][ContentType]$contentType,        
         [Parameter(Mandatory = $false)][string]$webhook
@@ -374,6 +599,22 @@ function Start-Subscription {
     $httpResponse | Format-List;
 }
 function Stop-Subscription {
+    <#
+    .SYNOPSIS
+    Stop subscription for a content type
+    
+    .DESCRIPTION
+    Stop subscription for a content type
+    
+    .PARAMETER contentType
+    The mandatory contentType
+    
+    .EXAMPLE
+    Stop-Subscription -contentType AuditSharePoint
+    
+    .NOTES
+    reference: https://learn.microsoft.com/en-us/office/office-365-management-api/office-365-management-activity-api-reference#stop-a-subscription
+    #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     param (
         [Parameter(Mandatory = $true)][ContentType]$contentType
@@ -389,9 +630,22 @@ function Stop-Subscription {
     }
 }
 function Stop-Subscriptions {
+    <#
+    .SYNOPSIS
+    Stop all subscriptions for this application
+    
+    .DESCRIPTION
+    Stop all subscriptions for this application
+    
+    .EXAMPLE
+    Stop-Subscriptions
+    
+    .NOTES
+    General notes
+    #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     param()
-    if ($PSCmdlet.ShouldProcess('TARGET')) {
+    if ($PSCmdlet.ShouldProcess('Current subscriptions')) {
         $contentTypes = @(Get-CurrentSubscriptions | Where-Object { $_.status -eq "enabled" } | ForEach-Object { $psitem.contentType });
         $contentTypes | ForEach-Object {
             $contentType = Get-ContentTypeEnum $PSItem;
@@ -400,6 +654,21 @@ function Stop-Subscriptions {
     }
 }
 function Get-CurrentSubscriptions {
+    <#
+    .SYNOPSIS
+    Get current subscriptions for this application
+    
+    .DESCRIPTION
+    This operation returns a collection of the current subscriptions together with the associated webhooks
+    
+    .EXAMPLE
+    Get-CurrentSubscriptions
+    
+    .NOTES
+    reference: https://learn.microsoft.com/en-us/office/office-365-management-api/office-365-management-activity-api-reference#list-current-subscriptions
+    #>
+    [CmdletBinding()]
+    param()
     $listSubscriptionURI = "$($script:root)/api/v1.0/$($script:tenantID)/activity/feed/subscriptions/list";
     $httpResponse = Invoke-O365APIHttpRequest -url $listSubscriptionURI -httpVerb Get;    
     $convertObjects = $httpResponse.Content | Out-String | ConvertFrom-Json;
@@ -415,6 +684,29 @@ function Get-CurrentSubscriptions {
     return;
 }
 function Get-AvailableContent {
+    <#
+    .SYNOPSIS
+    This operation lists the content currently available for retrieval for the specified content type
+    
+    .DESCRIPTION
+    This operation lists the content currently available for retrieval for the specified content type
+    
+    .PARAMETER startTime
+    Datetimes (UTC) indicating the start time of range for the audit content to return
+    
+    .PARAMETER endTime
+    Datetimes (UTC) indicating the end time of range for the audit content to return
+    
+    .PARAMETER contentType
+    The mandatory content type
+    
+    .EXAMPLE
+    $blobs = Get-AvailableContent -startTime $startTime -endTime $endTime
+    
+    .NOTES
+    reference: https://learn.microsoft.com/en-us/office/office-365-management-api/office-365-management-activity-api-reference#list-available-content
+    #>
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)][datetime]$startTime,        
         [Parameter(Mandatory = $true)][datetime]$endTime,
@@ -427,7 +719,7 @@ function Get-AvailableContent {
         $contentTypes = @($contentTypes | Where-Object { $PSItem -eq $contentTypeString });
     }
     if ($contentTypes.Count -eq 0) {
-        Write-Warning "The subscription of the sepcify ContentType or any ContentType has been not started yet.";
+        Write-Warning "The subscription of the specified ContentType or any ContentTypes has not been started yet.";
         return;
     }   
     $availableContent = New-Object Collections.Generic.List[Blob];
@@ -449,6 +741,7 @@ function Get-AvailableContent {
                 $blob.contentExpiration = $psitem.contentExpiration;
                 $availableContent.Add($blob);
             }
+            # Support the paging (https://learn.microsoft.com/en-us/office/office-365-management-api/office-365-management-activity-api-reference#pagination)
             if ($null -ne $httpResponse.Headers.'NextPageUri') {
                 $nextPageUri = $httpResponse.Headers.'NextPageUri';
                 Show-VerboseMessage "NextPageUri is $nextPageUri";
@@ -460,6 +753,23 @@ function Get-AvailableContent {
     return;
 }
 function Receive-Content {
+    <#
+    .SYNOPSIS
+    To retrieve a content blob, make a GET request against the corresponding content URI that is included in the list of available content
+    
+    .DESCRIPTION
+    To retrieve a content blob, make a GET request against the corresponding content URI that is included in the list of available content and in the notifications sent to a webhook. The returned content will be a collection of one more actions or events in JSON format
+    
+    .PARAMETER blobs
+    The collection blobs parmater
+    
+    .EXAMPLE
+    Receive-Content -blobs $blobs
+    
+    .NOTES
+    reference:https://learn.microsoft.com/en-us/office/office-365-management-api/office-365-management-activity-api-reference#retrieve-content
+    #>
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)][System.Object[]]$blobs
     )
@@ -489,9 +799,46 @@ function Receive-Content {
     }
 }
 function Receive-Notifications {
+    <#
+    .SYNOPSIS
+    Not implement. Notifications are sent to the configured webhook for a subscription as new content becomes available
+    
+    .DESCRIPTION
+    Not implement. Notifications are sent to the configured webhook for a subscription as new content becomes available
+    
+    .NOTES
+    reference:https://learn.microsoft.com/en-us/office/office-365-management-api/office-365-management-activity-api-reference#receiving-notifications
+    #>
+    [CmdletBinding()]
+    param()
     Show-InformationalMessage -message "The content notifications are sent to the webhook. We can not implement this operation in PowerShell Module" -consoleColor Yellow;
 }
 function Get-Notifications {
+    <#
+    .SYNOPSIS
+    This operation lists all notification attempts for the specified content type
+    
+    .DESCRIPTION
+    This operation lists all notification attempts for the specified content type
+  
+    .PARAMETER startTime
+    Datetimes (UTC) indicating the start time of range for the notifications to return
+    
+    .PARAMETER endTime
+    Datetimes (UTC) indicating the end time of range for the notifications to return
+    
+    .PARAMETER contentType
+    The mandatory content type
+
+    .EXAMPLE
+    $startTime = "2024-04-05T00:00:00"
+    $endTime = "2024-04-06T00:00:00"
+    Get-Notifications -startTime $startTime -endTime $endTime -contentType AuditExchange
+    
+    .NOTES
+    reference:https://learn.microsoft.com/en-us/office/office-365-management-api/office-365-management-activity-api-reference#list-notifications
+    #>
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)][datetime]$startTime,        
         [Parameter(Mandatory = $true)][datetime]$endTime,
@@ -499,7 +846,7 @@ function Get-Notifications {
     )
     $contentTypestring = Get-ContentTypeString $contentType;
     $listNotificationsUrl = "$($script:root)/api/v1.0/$($script:tenantID)/activity/feed/subscriptions/notifications?contentType=$contentTypestring&startTime=" + $startTime + "&endTime=" + $endTime;
-    Write-Verbose "List notifications via the Url $listNotificationsUrl";
+    Show-VerboseMessage -message "List notifications via the Url $listNotificationsUrl";
     $httpResponse = Invoke-O365APIHttpRequest -url $listNotificationsUrl -httpVerb Get;
     $convertObjs = ConvertFrom-Json $httpResponse.Content;
     $notifications = New-Object Collections.Generic.List[Notification];
@@ -518,6 +865,21 @@ function Get-Notifications {
     return;      
 }
 function Receive-ResourceFriendlyNames {
+    <#
+    .SYNOPSIS
+    This operation retrieves friendly names for objects in the data feed identified by guids. Currently "DlpSensitiveType" is the only supported object
+    
+    .DESCRIPTION
+    This operation retrieves friendly names for objects in the data feed identified by guids. Currently "DlpSensitiveType" is the only supported object
+    
+    .EXAMPLE
+    Receive-ResourceFriendlyNames
+    
+    .NOTES
+    reference:https://learn.microsoft.com/en-us/office/office-365-management-api/office-365-management-activity-api-reference#retrieve-resource-friendly-names
+    #>
+    [CmdletBinding()]
+    param()
     $url = "$($script:root)/api/v1.0/$($script:tenantID)/activity/feed/resources/dlpSensitiveTypes";
     Show-VerboseMessage "Receive resource FriendlyNames via the Url $url";
     $httpResponse = Invoke-O365APIHttpRequest -url $url -httpVerb Get;
