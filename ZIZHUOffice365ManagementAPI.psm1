@@ -18,6 +18,18 @@
     $tenantId = 'cff343b2-f0ff-416a-802b-28595997daa2';
     $clientSecret = '';
     Connect-Office365ManagementAPI -tenantID $tenantId -clientID $clientID -ClientSecret $clientSecret;
+
+    $clientID = 'd9499009-1faf-418f-8033-640c29e4a5d7';
+    $tenantId = '4ecb5816-21ea-4b5a-b948-fab6471545e1';
+    $clientSecret = '';
+    Connect-Office365ManagementAPI -tenantID $tenantId -clientID $clientID -ClientSecret $clientSecret -office365SubscriptionPlanType GallatinPlan;
+
+    # Connect to ZIZHUOffice365ManagementAPI module via user sign-in
+    $clientID = '0d09e429-1e3f-4050-9fc6-f8bcd3e8c4c5';
+    $tenantId = '4ecb5816-21ea-4b5a-b948-fab6471545e1';
+    $redirectUri='https://login.microsoftonline.com/common/oauth2/nativeclient'
+    $loginHint = 'RiquelTest@jeffreyhe1.partner.onmschina.cn';
+    Connect-Office365ManagementAPI -tenantID $tenantId -clientID $clientID -loginHint $loginHint -redirectUri $redirectUri -office365SubscriptionPlanType GallatinPlan;
    
    # Connect to ZIZHUOffice365ManagementAPI module via client certificate
     $clientID = 'bc4db1db-b705-434a-91ff-145aa94185c8';
@@ -34,8 +46,8 @@
     Connect-Office365ManagementAPI -tenantID $tenantId -clientID $clientID -loginHint $loginHint -redirectUri $redirectUri;
 
    # List available content and receive audit data
-    $startTime = "2024-04-04T00:00:00"; 
-    $endTime = "2024-04-05T00:00:00";
+    $startTime = "2024-05-14T00:00:00"; 
+    $endTime = "2024-05-15T00:00:00";
     $blobs = Get-AvailableContent -startTime $startTime -endTime $endTime;
     Receive-Content -blobs $blobs;
 
@@ -134,6 +146,8 @@ $script:AuthResult = $null;
 $script:httpErrorResponse = $null;
 $script:maxretries = 4;
 $script:sleepSeconds = 2;
+$script:AzureCloudInstance = $null;
+
 function Show-VerboseMessage {    
     param(
         [Parameter(Mandatory = $true)][string]$message
@@ -287,26 +301,21 @@ function Set-RootString {
     switch ($office365SubscriptionPlanType) {
         Enterpriseplan {
             $script:root = 'https://manage.office.com';
+            $script:AzureCloudInstance = 'AzurePublic';
             Break; 
-        }
-        GCCGovernmentPlan { 
-            $script:root = 'https://manage-gcc.office.com';
-            Break;
         }
         GCCHighGovernmentPlan {
             $script:root = 'https://manage.office365.us';
-            Break;
-        }
-        DoDGovernmentPlan { 
-            $script:root = 'https://manage.protection.apps.mil';
+            $script:AzureCloudInstance = 'AzureUsGovernment';
             Break;
         }
         GallatinPlan { 
-            $script:root = 'https://manage.office365.cn';            
+            $script:root = 'https://manage.office365.cn';
+            $script:AzureCloudInstance = 'AzureChina';           
             Break;
         }
         Default {
-            Write-Error "unknown type: $contentTypeData" -ErrorAction Stop;
+            Write-Error "unknown/unsupported type: $office365SubscriptionPlanType" -ErrorAction Stop;
         }        
     }
     $script:scope = "$script:root/.default";
@@ -461,10 +470,10 @@ function Get-OauthToken {
     if (-not [string]::IsNullOrWhiteSpace($script:redirectUri)) {
         try {
             Show-VerboseMessage "Get-MsalToken via user sign-in";
-            $script:AuthResult = Get-MsalToken -ClientId $script:clientId -TenantId $script:tenantID -Silent -LoginHint $script:loginHint -RedirectUri $script:redirectUri -Scopes $script:scope;
+            $script:AuthResult = Get-MsalToken -ClientId $script:clientId -TenantId $script:tenantID -Silent -LoginHint $script:loginHint -RedirectUri $script:redirectUri -Scopes $script:scope -AzureCloudInstance $script:AzureCloudInstance;
         }
         Catch [Microsoft.Identity.Client.MsalUiRequiredException] {
-            $script:AuthResult = Get-MsalToken -ClientId $script:clientId -TenantId $script:tenantID -Interactive -LoginHint $script:loginHint -RedirectUri $script:redirectUri -Scopes $script:scope; ;
+            $script:AuthResult = Get-MsalToken -ClientId $script:clientId -TenantId $script:tenantID -Interactive -LoginHint $script:loginHint -RedirectUri $script:redirectUri -Scopes $script:scope  -AzureCloudInstance $script:AzureCloudInstance;
         }
         Catch {
             Show-LastErrorDetails;
@@ -477,10 +486,10 @@ function Get-OauthToken {
             if (-not [string]::IsNullOrWhiteSpace($script:clientsecret)) {
                 Show-VerboseMessage "Get-MsalToken via client crendential auth flow";
                 $securedclientSecret = ConvertTo-SecureString $script:clientsecret -AsPlainText -Force
-                $script:AuthResult = Get-MsalToken -clientID $script:clientId -ClientSecret $securedclientSecret -tenantID $script:tenantID -Scopes $script:scope;
+                $script:AuthResult = Get-MsalToken -clientID $script:clientId -ClientSecret $securedclientSecret -tenantID $script:tenantID -Scopes $script:scope -AzureCloudInstance $script:AzureCloudInstance;
             }
             elseif ($null -ne $script:clientcertificate) {
-                $script:AuthResult = Get-MsalToken -clientID $script:clientId -ClientCertificate $script:clientcertificate -tenantID $script:tenantID -Scopes $script:scope;
+                $script:AuthResult = Get-MsalToken -clientID $script:clientId -ClientCertificate $script:clientcertificate -tenantID $script:tenantID -Scopes $script:scope -AzureCloudInstance $script:AzureCloudInstance;
             }        
         }
         catch {
