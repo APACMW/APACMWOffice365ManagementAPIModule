@@ -46,8 +46,8 @@
     Connect-Office365ManagementAPI -tenantID $tenantId -clientID $clientID -loginHint $loginHint -redirectUri $redirectUri;
 
    # List available content and receive audit data
-    $startTime = "2024-05-14T00:00:00"; 
-    $endTime = "2024-05-15T00:00:00";
+    $startTime = "2025-03-04T00:00:00"; 
+    $endTime = "2025-03-05T00:00:00";
     $blobs = Get-AvailableContent -startTime $startTime -endTime $endTime;
     Receive-Content -blobs $blobs;
 
@@ -721,6 +721,8 @@ function Get-AvailableContent {
         [Parameter(Mandatory = $true)][datetime]$endTime,
         [Parameter(Mandatory = $false)][ContentType]$contentType
     )
+    $startTimeStr = $startTime.ToString("yyyy-MM-ddTHH:mm:ss");
+    $endTimeStr = $endTime.ToString("yyyy-MM-ddTHH:mm:ss");
     $Subscriptions = Get-CurrentSubscriptions;
     $contentTypes = @($Subscriptions | Where-Object { $_.status -eq "enabled" } | ForEach-Object { $psitem.contentType });
     if ($PSBoundParameters.ContainsKey('contentType')) {
@@ -734,9 +736,12 @@ function Get-AvailableContent {
     $availableContent = New-Object Collections.Generic.List[Blob];
     Show-VerboseMessage "Run Get-AvailableContent for the contenttypes $contentTypes";
     $contentTypes | ForEach-Object {
+        $contentUrl = $null;
+        $enabledContentType = $null;
         $enabledContentType = $psitem;
         # List available content        
-        $contentUrl = "$($script:root)/api/v1.0/$($script:tenantID)/activity/feed/subscriptions/content?contentType=$enabledContentType&startTime=" + $startTime + "&endTime=" + $endTime;        
+        [string]$contentUrl = [string]::Concat("$($script:root)/api/v1.0/$($script:tenantID)/activity/feed/subscriptions/content?contentType=$($enabledContentType)`&startTime=" , $startTimeStr , "`&endTime=" , $endTimeStr);
+        $nextPageUri = $null; 
         While (-not [string]::IsNullOrEmpty($contentUrl)) {
             Show-VerboseMessage "List available content via the Url $contentUrl";
             $httpResponse = Invoke-O365APIHttpRequest -url $contentUrl -httpVerb Get; 
@@ -853,8 +858,10 @@ function Get-Notifications {
         [Parameter(Mandatory = $true)][datetime]$endTime,
         [Parameter(Mandatory = $true)][ContentType]$contentType
     )
+    $startTimeStr = $startTime.ToString("yyyy-MM-ddTHH:mm:ss");
+    $endTimeStr = $endTime.ToString("yyyy-MM-ddTHH:mm:ss");
     $contentTypestring = Get-ContentTypeString $contentType;
-    $listNotificationsUrl = "$($script:root)/api/v1.0/$($script:tenantID)/activity/feed/subscriptions/notifications?contentType=$contentTypestring&startTime=" + $startTime + "&endTime=" + $endTime;
+    [string]$listNotificationsUrl = [string]::Concat("$($script:root)/api/v1.0/$($script:tenantID)/activity/feed/subscriptions/notifications?contentType=$($contentTypestring)`&startTime=" , $startTimeStr , "`&endTime=" , $endTimeStr);
     Show-VerboseMessage -message "List notifications via the Url $listNotificationsUrl";
     $httpResponse = Invoke-O365APIHttpRequest -url $listNotificationsUrl -httpVerb Get;
     $convertObjs = ConvertFrom-Json $httpResponse.Content;
