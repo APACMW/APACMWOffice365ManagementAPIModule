@@ -104,10 +104,10 @@
             Tags = @('Microsoft', 'Office365ManagementAPI')
 
             # A URL to the license for this module.
-            # LicenseUri = 'https://github.com/DongWangXiaoQi/APACMWOffice365ManagementAPIModule/blob/main/LICENSE'
+            # LicenseUri = 'https://github.com/APACMW/APACMWOffice365ManagementAPIModule/blob/main/LICENSE'
 
             # A URL to the main website for this project.
-            # ProjectUri = 'https://github.com/DongWangXiaoQi/APACMWOffice365ManagementAPIModule'
+            # ProjectUri = 'https://github.com/APACMW/APACMWOffice365ManagementAPIModule'
 
             # A URL to an icon representing this module.
             # IconUri = ''
