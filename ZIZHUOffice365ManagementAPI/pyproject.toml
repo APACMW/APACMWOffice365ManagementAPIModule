@@ -1,0 +1,20 @@
+[project]
+name = "APACMWOffice365ManagementAPIModule"
+version = "0.0.1"
+authors = [
+  { name="Dongli Pan", email="dongli.pan@microsoft.com" },
+  { name="Qi Dong", email="doqi@microsoft.com" }
+]
+description = "A small example package"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICENSE"]
+
+[project.urls]
+Homepage = "https://github.com/APACMW/APACMWOffice365ManagementAPIModule"
+Issues = "https://github.com/APACMW/APACMWOffice365ManagementAPIModule"
